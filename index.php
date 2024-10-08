@@ -136,31 +136,34 @@
       $sales_name = htmlspecialchars($_GET['nama_sales'] ?? '');
       $month = htmlspecialchars($_GET['month'] ?? '');
 
-      $sql = "SELECT leads.*, produk.nama_produk AS product_name, sales.nama_sales AS sales_name 
+      $searchPerformed = !empty($product_name) || !empty($sales_name) || !empty($month);
+
+      if ($searchPerformed) {
+        $sql = "SELECT leads.*, produk.nama_produk AS product_name, sales.nama_sales AS sales_name 
         FROM leads 
         JOIN produk ON leads.id_produk = produk.id_produk 
         JOIN sales ON leads.id_sales = sales.id_sales
         WHERE (produk.nama_produk LIKE ? AND sales.nama_sales LIKE ?)";
 
-      if ($month) {
-        $sql .= " AND DATE_FORMAT(leads.tanggal, '%Y-%m') = ?";
+        if ($month) {
+          $sql .= " AND DATE_FORMAT(leads.tanggal, '%Y-%m') = ?";
+        }
+
+        $stmt = $conn->prepare($sql);
+
+        $likeProductName = "%" . $product_name . "%";
+        $likeSalesName = "%" . $sales_name . "%";
+
+        if ($month) {
+          $stmt->bind_param("sss", $likeProductName, $likeSalesName, $month);
+        } else {
+          $stmt->bind_param("ss", $likeProductName, $likeSalesName);
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
       }
-
-      $stmt = $conn->prepare($sql);
-
-      $likeProductName = "%" . $product_name . "%";
-      $likeSalesName = "%" . $sales_name . "%";
-
-      if ($month) {
-        $stmt->bind_param("sss", $likeProductName, $likeSalesName, $month);
-      } else {
-        $stmt->bind_param("ss", $likeProductName, $likeSalesName);
-      }
-
-      $stmt->execute();
-      $result = $stmt->get_result();
       ?>
-
 
       <!-- Input pencarian -->
       <div class="mt-5">
@@ -181,39 +184,41 @@
         </form>
       </div>
 
-      <div class="mt-5">
-        <h2>Hasil Pencarian</h2>
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Nama Produk</th>
-              <th>Nama Sales</th>
-              <th>Tanggal</th>
-              <th>Kota</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php
-            if ($result->num_rows > 0) {
-              $no = 1;
-              while ($row = $result->fetch_assoc()) {
-                echo "<tr>
-                            <td>" . $no . "</td>
-                            <td>" . $row['product_name'] . "</td>
-                            <td>" . $row['sales_name'] . "</td>
-                            <td>" . $row['tanggal'] . "</td>
-                            <td>" . $row['kota'] . "</td>
-                          </tr>";
-                $no++;
+      <?php if ($searchPerformed): ?>
+        <div class="mt-5">
+          <h2>Hasil Pencarian</h2>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama Produk</th>
+                <th>Nama Sales</th>
+                <th>Tanggal</th>
+                <th>Kota</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php
+              if ($result->num_rows > 0) {
+                $no = 1;
+                while ($row = $result->fetch_assoc()) {
+                  echo "<tr>
+                                <td>" . $no . "</td>
+                                <td>" . $row['product_name'] . "</td>
+                                <td>" . $row['sales_name'] . "</td>
+                                <td>" . $row['tanggal'] . "</td>
+                                <td>" . $row['kota'] . "</td>
+                              </tr>";
+                  $no++;
+                }
+              } else {
+                echo "<tr><td colspan='5' class='text-center'>Tidak ada data ditemukan.</td></tr>";
               }
-            } else {
-              echo "<tr><td colspan='5' class='text-center'>Tidak ada data ditemukan.</td></tr>";
-            }
-            ?>
-          </tbody>
-        </table>
-      </div>
+              ?>
+            </tbody>
+          </table>
+        </div>
+      <?php endif; ?>
     </main>
   </div>
 
