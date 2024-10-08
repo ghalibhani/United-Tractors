@@ -13,6 +13,13 @@
 
   <?php
   require('connection.php');
+  // Query untuk mendapatkan semua data dari tabel leads
+  $sql = "SELECT * 
+        FROM leads
+        JOIN sales ON leads.id_sales = sales.id_sales
+        JOIN produk ON leads.id_produk = produk.id_produk";
+
+  $result = $conn->query($sql);
   ?>
 
   <div class="p-5" id="root">
@@ -72,18 +79,58 @@
               </div>
             </div>
             <div class="row justify-content-center">
-              
+
               <div class="col-2 d-flex m-0">
                 <input class="btn btn-primary btn-lg ms-auto" type="submit" value="Simpan">
               </div>
               <div class="col-2 d-flex m-0">
                 <input class="btn btn-secondary btn-lg me-auto" type="reset" value="Cancel">
-              </div> 
+              </div>
             </div>
           </form>
         </div>
       </div>
+
+      <h2>Daftar Leads</h2>
+
+      <table class="table">
+        <tr>
+          <th>ID</th>
+          <th>Tanggal</th>
+          <th>Sales</th>
+          <th>Nama Lead</th>
+          <th>Produk</th>
+          <th>No. WhatsApp</th>
+          <th>Kota</th>
+        </tr>
+
+        <?php
+        if ($result->num_rows > 0) {
+          // Output data setiap baris
+          while ($row = $result->fetch_assoc()) {
+            echo "<tr>
+                        <td>" . $row["id_leads"] . "</td>
+                        <td>" . $row["tanggal"] . "</td>
+                        <td>" . $row["nama_sales"] . "</td>
+                        <td>" . $row["nama_lead"] . "</td>
+                        <td>" . $row["nama_produk"] . "</td>
+                        <td>" . $row["no_wa"] . "</td>
+                        <td>" . $row["kota"] . "</td>
+                      </tr>";
+          }
+        } else {
+          echo "<tr><td colspan='7'>Tidak ada data</td></tr>";
+        }
+
+        // Tutup koneksi
+        $conn->close();
+        ?>
+
+      </table>
+
     </main>
+
+
   </div>
 
   <?php

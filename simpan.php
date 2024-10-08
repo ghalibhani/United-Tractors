@@ -13,7 +13,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   // Simpan data ke database
   $sql = "INSERT INTO leads (tanggal, id_sales, nama_lead, id_produk, no_wa, kota) VALUES ('$tanggal', '$sales', '$leadname', '$produk', '$whatsapp', '$kota')";
   if ($conn->query($sql) === TRUE) {
-    echo "Data berhasil disimpan.";
+    header("Location: index.php");
   } else {
     echo "Error: " . $sql . "<br>" . $conn->error;
   }
