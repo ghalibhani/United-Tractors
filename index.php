@@ -13,11 +13,11 @@
 
   <?php
   require('connection.php');
-  // Query untuk mendapatkan semua data dari tabel leads
   $sql = "SELECT * 
         FROM leads
         JOIN sales ON leads.id_sales = sales.id_sales
-        JOIN produk ON leads.id_produk = produk.id_produk";
+        JOIN produk ON leads.id_produk = produk.id_produk
+        ORDER BY leads.tanggal DESC";
 
   $result = $conn->query($sql);
   ?>
@@ -91,46 +91,130 @@
         </div>
       </div>
 
-      <h2>Daftar Leads</h2>
+      <!-- Tabel Daftar Leads -->
+      <div class="pt-5">
+        <h2>Daftar Leads</h2>
+        <table class="table">
+          <tr>
+            <th>ID Input</th>
+            <th>Tanggal</th>
+            <th>Sales</th>
+            <th>Produk</th>
+            <th>Nama Lead</th>
+            <th>No. WhatsApp</th>
+            <th>Kota</th>
+          </tr>
 
-      <table class="table">
-        <tr>
-          <th>ID</th>
-          <th>Tanggal</th>
-          <th>Sales</th>
-          <th>Nama Lead</th>
-          <th>Produk</th>
-          <th>No. WhatsApp</th>
-          <th>Kota</th>
-        </tr>
-
-        <?php
-        if ($result->num_rows > 0) {
-          // Output data setiap baris
-          while ($row = $result->fetch_assoc()) {
-            echo "<tr>
-                        <td>" . $row["id_leads"] . "</td>
+          <?php
+          if ($result->num_rows > 0) {
+            $no = 1;
+            while ($row = $result->fetch_assoc()) {
+              $id_leads = str_pad($no, 3, '0', STR_PAD_LEFT);
+              echo "<tr>
+                        <td>$id_leads</td>
                         <td>" . $row["tanggal"] . "</td>
                         <td>" . $row["nama_sales"] . "</td>
-                        <td>" . $row["nama_lead"] . "</td>
                         <td>" . $row["nama_produk"] . "</td>
+                        <td>" . $row["nama_lead"] . "</td>
                         <td>" . $row["no_wa"] . "</td>
                         <td>" . $row["kota"] . "</td>
                       </tr>";
+              $no++;
+            }
+          } else {
+            echo "<tr><td colspan='7'>Tidak ada data</td></tr>";
           }
-        } else {
-          echo "<tr><td colspan='7'>Tidak ada data</td></tr>";
-        }
+          $conn->close();
+          ?>
+        </table>
+      </div>
 
-        // Tutup koneksi
-        $conn->close();
-        ?>
+      <?php
+      require('connection.php');
 
-      </table>
+      $product_name = htmlspecialchars($_GET['nama_produk'] ?? '');
+      $sales_name = htmlspecialchars($_GET['nama_sales'] ?? '');
+      $month = htmlspecialchars($_GET['month'] ?? '');
 
+      $sql = "SELECT leads.*, produk.nama_produk AS product_name, sales.nama_sales AS sales_name 
+        FROM leads 
+        JOIN produk ON leads.id_produk = produk.id_produk 
+        JOIN sales ON leads.id_sales = sales.id_sales
+        WHERE (produk.nama_produk LIKE ? AND sales.nama_sales LIKE ?)";
+
+      if ($month) {
+        $sql .= " AND DATE_FORMAT(leads.tanggal, '%Y-%m') = ?";
+      }
+
+      $stmt = $conn->prepare($sql);
+
+      $likeProductName = "%" . $product_name . "%";
+      $likeSalesName = "%" . $sales_name . "%";
+
+      if ($month) {
+        $stmt->bind_param("sss", $likeProductName, $likeSalesName, $month);
+      } else {
+        $stmt->bind_param("ss", $likeProductName, $likeSalesName);
+      }
+
+      $stmt->execute();
+      $result = $stmt->get_result();
+      ?>
+
+
+      <!-- Input pencarian -->
+      <div class="mt-5">
+        <h2>Pencarian Data</h2>
+        <form method="GET" class="row g-3">
+          <div class="col-md-4">
+            <input type="text" class="form-control" name="nama_produk" placeholder="Masukkan nama produk...">
+          </div>
+          <div class="col-md-4">
+            <input type="text" class="form-control" name="nama_sales" placeholder="Masukkan nama sales...">
+          </div>
+          <div class="col-md-4">
+            <input type="month" class="form-control" name="month">
+          </div>
+          <div class="col-md-4">
+            <button type="submit" class="btn btn-primary w-100">Cari</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="mt-5">
+        <h2>Hasil Pencarian</h2>
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Produk</th>
+              <th>Nama Sales</th>
+              <th>Tanggal</th>
+              <th>Kota</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php
+            if ($result->num_rows > 0) {
+              $no = 1;
+              while ($row = $result->fetch_assoc()) {
+                echo "<tr>
+                            <td>" . $no . "</td>
+                            <td>" . $row['product_name'] . "</td>
+                            <td>" . $row['sales_name'] . "</td>
+                            <td>" . $row['tanggal'] . "</td>
+                            <td>" . $row['kota'] . "</td>
+                          </tr>";
+                $no++;
+              }
+            } else {
+              echo "<tr><td colspan='5' class='text-center'>Tidak ada data ditemukan.</td></tr>";
+            }
+            ?>
+          </tbody>
+        </table>
+      </div>
     </main>
-
-
   </div>
 
   <?php
